@@ -6,7 +6,7 @@ from app.api.deps import db_session, require_admin, get_current_user
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.users import User
 from fastapi.security import OAuth2PasswordRequestForm
-from app.schemas.auth import LoginIn, RegisterIn, TokenOut
+from app.schemas.auth import LoginIn, RegisterIn, TokenOut, ChangePasswordIn
 from app.schemas.users import UserOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -64,5 +64,18 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(db_
 )
 def me(current = Depends(get_current_user)):
     return current
+
+
+@router.post(
+    "/change-password",
+    description="Смена пароля текущего пользователя. Требует указать текущий и новый пароли."
+)
+def change_password(payload: ChangePasswordIn, current = Depends(get_current_user), db: Session = Depends(db_session)):
+    if not current.password_hash or not verify_password(payload.current_password, current.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    current.password_hash = hash_password(payload.new_password)
+    db.add(current)
+    db.commit()
+    return {"status": "changed"}
 
 
