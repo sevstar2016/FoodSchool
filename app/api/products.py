@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import db_session, require_admin
-from app.models.models import Product
+from app.models.products import Product
 from app.schemas.products import ProductCreate, ProductOut, ProductUpdate
 
 router = APIRouter(prefix="/products", tags=["products"])
