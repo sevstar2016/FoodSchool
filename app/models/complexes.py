@@ -15,6 +15,7 @@ class Complex(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     creation_date: Mapped[date] = mapped_column(Date, nullable=False)
+    is_closed: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
 
 class UserComplexChoice(Base):
@@ -24,7 +25,6 @@ class UserComplexChoice(Base):
     weekday_id: Mapped[int] = mapped_column(ForeignKey("weekdays.id", ondelete="CASCADE"), primary_key=True)
     complex_id: Mapped[int] = mapped_column(ForeignKey("complexes.id", ondelete="CASCADE"), nullable=False)
     week_start: Mapped[date] = mapped_column(Date, nullable=False, default=date.today)
-    is_closed: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
 
 class UserComplex(Base):
