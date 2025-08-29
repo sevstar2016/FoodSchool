@@ -11,6 +11,8 @@ services:
       - ":5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    networks:
+      food_internal:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-food}"]
       interval: 5s
@@ -36,6 +38,7 @@ services:
       ADMIN_PHONE: ${ADMIN_PHONE:-0000000000}
       ADMIN_AVATAR_URL: ${ADMIN_AVATAR_URL:-}
     networks:
+      food_internal:
       traefik:
     labels:
       - "traefik.enable=true"
@@ -51,6 +54,8 @@ volumes:
   db_data:
 
 networks:
+  food_internal:
+    internal: true
   traefik:
     external:
       name: traefik
