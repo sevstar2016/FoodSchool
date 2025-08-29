@@ -47,7 +47,7 @@ services:
       - "traefik.http.routers.food-backend.tls=false"
       - "traefik.http.routers.food-backend.tls.options=default"
       - "traefik.http.routers.food-backend.tls.certresolver=letsEncrypt"
-      - "traefik.http.routers.food-backend.rule=(Host(`food.se.215sozvezdie.ru`) || Host(`www.food.se.215sozvezdie.ru`)) && PathPrefix(`/api`)"
+      - "traefik.http.routers.food-backend.rule=Host(`food.se.215sozvezdie.ru`) && PathPrefix(`/api`)"
       - "traefik.http.services.food-backend.loadbalancer.server.port=8000"
       - "traefik.http.routers.food-backend.entryPoints=http,https"
       - "traefik.docker.network=traefik"
