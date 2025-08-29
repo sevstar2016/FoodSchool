@@ -7,7 +7,7 @@ from app.api import auth as auth_router
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="FoodAPI", version="0.1.0")
+    app = FastAPI(title="FoodAPI", version="0.1.0", root_path="/api")
 
     @app.get("/health")
     def healthcheck():
