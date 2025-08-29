@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select, delete
@@ -36,6 +37,14 @@ def create_complex(payload: ComplexCreate, db: Session = Depends(db_session)):
     db.refresh(complex_obj)
     return complex_obj
 
+
+@router.get(
+    "/",
+    response_model=List[ComplexOut],
+    description="Получить все комплексы."
+)
+def get_complexes(db: Session = Depends(db_session)):
+    return db.execute(select(Complex)).scalars().all()
 
 @router.get(
     "/{complex_id}",

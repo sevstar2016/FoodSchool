@@ -1,4 +1,6 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import db_session, require_admin, require_self_or_admin
@@ -21,6 +23,14 @@ def create_user(payload: UserCreate, db: Session = Depends(db_session)):
     db.refresh(user)
     return user
 
+
+@router.get(
+    "/",
+    response_model=List[UserOut],
+    description="Получить всех пользователей."
+)
+def get_users(db: Session = Depends(db_session)):
+    return db.execute(select(User)).scalars().all()
 
 @router.get(
     "/{user_id}",

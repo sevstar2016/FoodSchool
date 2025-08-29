@@ -1,4 +1,6 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import db_session, require_admin
@@ -21,6 +23,14 @@ def create_order(payload: OrderCreate, db: Session = Depends(db_session)):
     db.refresh(order)
     return order
 
+
+@router.get(
+    "/",
+    response_model=List[OrderOut],
+    description="Получить все заказы."
+)
+def get_orders(db: Session = Depends(db_session)):
+    return db.execute(select(Order)).scalars().all()
 
 @router.get(
     "/{order_id}",

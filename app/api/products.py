@@ -1,4 +1,6 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import db_session, require_admin
@@ -21,6 +23,14 @@ def create_product(payload: ProductCreate, db: Session = Depends(db_session)):
     db.refresh(product)
     return product
 
+
+@router.get(
+    "/",
+    response_model=List[ProductOut],
+    description="Получить все продукты."
+)
+def get_products(db: Session = Depends(db_session)):
+    return db.execute(select(Product)).scalars().all()
 
 @router.get(
     "/{product_id}",
