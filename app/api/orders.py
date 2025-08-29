@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import db_session, require_admin
-from app.models.models import Order
+from app.models.orders import Order
 from app.schemas.orders import OrderCreate, OrderOut, OrderUpdate
 
 router = APIRouter(prefix="/orders", tags=["orders"])
