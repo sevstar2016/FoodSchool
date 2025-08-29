@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import db_session, require_admin
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.users import User
+from fastapi.security import OAuth2PasswordRequestForm
 from app.schemas.auth import LoginIn, RegisterIn, TokenOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -45,11 +46,11 @@ def register(payload: RegisterIn, db: Session = Depends(db_session)):
 @router.post(
     "/login",
     response_model=TokenOut,
-    description="Аутентификация по email/паролю. Возвращает JWT-токен Bearer."
+    description="Аутентификация по email/паролю. Возвращает JWT-токен Bearer. Поддерживает OAuth2PasswordRequestForm."
 )
-def login(payload: LoginIn, db: Session = Depends(db_session)):
-    user = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
-    if not user or not user.password_hash or not verify_password(payload.password, user.password_hash):
+def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(db_session)):
+    user = db.execute(select(User).where(User.email == form.username)).scalar_one_or_none()
+    if not user or not user.password_hash or not verify_password(form.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid credentials")
     token = create_access_token(str(user.id))
     return TokenOut(access_token=token)
