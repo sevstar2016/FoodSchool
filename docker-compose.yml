@@ -37,6 +37,8 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
       ADMIN_PHONE: ${ADMIN_PHONE:-0000000000}
       ADMIN_AVATAR_URL: ${ADMIN_AVATAR_URL:-}
+    volumes:
+      - ./:/app
     networks:
       food_internal:
       traefik:
