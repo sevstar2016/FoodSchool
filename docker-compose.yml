@@ -40,8 +40,8 @@ services:
     volumes:
       - ./:/app
     networks:
-      food_internal:
       traefik:
+      food_internal:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.food-backend.tls=false"
