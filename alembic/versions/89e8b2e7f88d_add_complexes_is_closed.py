@@ -10,6 +10,7 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision: str = '89e8b2e7f88d'
@@ -20,9 +21,17 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # add complexes.is_closed with default false for existing rows, then drop server_default
-    op.add_column('complexes', sa.Column('is_closed', sa.Boolean(), nullable=False, server_default=sa.text('false')))
-    op.alter_column('complexes', 'is_closed', server_default=None)
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    columns = {col['name'] for col in inspector.get_columns('complexes')}
+    if 'is_closed' not in columns:
+        op.add_column('complexes', sa.Column('is_closed', sa.Boolean(), nullable=False, server_default=sa.text('false')))
+        op.alter_column('complexes', 'is_closed', server_default=None)
 
 
 def downgrade() -> None:
-    op.drop_column('complexes', 'is_closed')
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    columns = {col['name'] for col in inspector.get_columns('complexes')}
+    if 'is_closed' in columns:
+        op.drop_column('complexes', 'is_closed')

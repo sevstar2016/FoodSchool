@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import db_session, require_admin
+from app.api.deps import db_session, require_admin, get_current_user
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.users import User
 from fastapi.security import OAuth2PasswordRequestForm
 from app.schemas.auth import LoginIn, RegisterIn, TokenOut
+from app.schemas.users import UserOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -54,5 +55,14 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(db_
         raise HTTPException(status_code=400, detail="Invalid credentials")
     token = create_access_token(str(user.id))
     return TokenOut(access_token=token)
+
+
+@router.get(
+    "/me",
+    response_model=UserOut,
+    description="Вернуть профиль текущего авторизованного пользователя."
+)
+def me(current = Depends(get_current_user)):
+    return current
 
 
