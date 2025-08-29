@@ -1,7 +1,9 @@
 from datetime import date
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional
+from app.schemas.classes import ClassOut
 
 
 class UserBase(BaseModel):
@@ -38,6 +40,11 @@ class UserUpdate(BaseModel):
 
 class UserOut(UserBase):
     id: int
+    klass: Optional[ClassOut] = Field(
+        default=None,
+        validation_alias='clazz',
+        serialization_alias='class',
+    )
 
     class Config:
         from_attributes = True
