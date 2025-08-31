@@ -21,7 +21,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def register(payload: RegisterIn, db: Session = Depends(db_session)):
     exists = db.execute(select(User).where((User.login == payload.login))).scalar_one_or_none()
     if exists:
-        raise HTTPException(status_code=400, detail="Email or login already registered")
+        raise HTTPException(status_code=400, detail="Login already registered")
 
     user = User(
         login=payload.login,

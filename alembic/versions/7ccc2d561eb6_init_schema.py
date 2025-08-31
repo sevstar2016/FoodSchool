@@ -96,7 +96,7 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['class_id'], ['classes.id'], ),
     sa.ForeignKeyConstraint(['role_id'], ['users_roles.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('email')
+    sa.UniqueConstraint('login')
     )
     op.create_table('complex_products',
     sa.Column('complex_id', sa.Integer(), nullable=False),

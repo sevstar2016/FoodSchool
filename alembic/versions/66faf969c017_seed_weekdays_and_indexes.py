@@ -20,7 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # индексы как в SQL-файле
-    op.create_index('idx_users_email', 'users', ['email'], unique=False)
+    op.create_index('idx_users_login', 'users', ['login'], unique=False)
     op.create_index('idx_products_name', 'products', ['name'], unique=False)
     op.create_index('idx_orders_user_id', 'orders', ['user_id'], unique=False)
     op.create_index('idx_reviews_user_id', 'reviews', ['user_id'], unique=False)
@@ -53,4 +53,4 @@ def downgrade() -> None:
     op.drop_index('idx_reviews_user_id', table_name='reviews')
     op.drop_index('idx_orders_user_id', table_name='orders')
     op.drop_index('idx_products_name', table_name='products')
-    op.drop_index('idx_users_email', table_name='users')
+    op.drop_index('idx_users_login', table_name='users')

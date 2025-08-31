@@ -33,7 +33,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       DEBUG: "false"
       JWT_SECRET: ${JWT_SECRET:-devsecret}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_LOGIN: ${ADMIN_LOGIN:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
       ADMIN_PHONE: ${ADMIN_PHONE:-0000000000}
       ADMIN_AVATAR_URL: ${ADMIN_AVATAR_URL:-}
