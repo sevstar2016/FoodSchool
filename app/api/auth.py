@@ -19,18 +19,18 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     dependencies=[Depends(require_admin)],
 )
 def register(payload: RegisterIn, db: Session = Depends(db_session)):
-    exists = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
+    exists = db.execute(select(User).where((User.login == payload.login))).scalar_one_or_none()
     if exists:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="Email or login already registered")
 
     user = User(
+        login=payload.login,
         name=payload.name,
         lastname=payload.lastname,
         patronymic=payload.patronymic,
         age=payload.age,
         class_id=payload.class_id,
         phone_number=payload.phone_number,
-        email=payload.email,
         created_at=__import__("datetime").date.today(),
         avatar_url=payload.avatar_url,
         user_rate=payload.user_rate,
@@ -47,10 +47,10 @@ def register(payload: RegisterIn, db: Session = Depends(db_session)):
 @router.post(
     "/login",
     response_model=TokenOut,
-    description="Аутентификация по email/паролю. Возвращает JWT-токен Bearer. Поддерживает OAuth2PasswordRequestForm."
+    description="Аутентификация по логину/паролю. Возвращает JWT-токен Bearer. Поддерживает OAuth2PasswordRequestForm.",
 )
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(db_session)):
-    user = db.execute(select(User).where(User.email == form.username)).scalar_one_or_none()
+    user = db.execute(select(User).where(User.login == form.username)).scalar_one_or_none()
     if not user or not user.password_hash or not verify_password(form.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid credentials")
     token = create_access_token(str(user.id))

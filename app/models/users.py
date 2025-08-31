@@ -35,13 +35,13 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    login: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     name: Mapped[Optional[str]] = mapped_column(String(255))
     lastname: Mapped[Optional[str]] = mapped_column(String(255))
     patronymic: Mapped[str] = mapped_column(String(255), nullable=False)
     age: Mapped[int] = mapped_column(Integer, nullable=False)
     class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False)
     phone_number: Mapped[str] = mapped_column(String(50), nullable=False)
-    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     created_at: Mapped[date] = mapped_column(Date, nullable=False)
     avatar_url: Mapped[str] = mapped_column(Text, nullable=False)
     user_rate: Mapped[int] = mapped_column(Integer, nullable=False)

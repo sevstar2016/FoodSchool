@@ -13,6 +13,7 @@ class ComplexBase(BaseModel):
 class ComplexCreate(ComplexBase):
     product_ids: List[int] = []
     weekday_ids: List[int] = []
+    week_start: Optional[date] = None
 
 
 class ComplexUpdate(BaseModel):

@@ -1,19 +1,19 @@
 from datetime import date
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from typing import Optional
 from app.schemas.classes import ClassOut
 
 
 class UserBase(BaseModel):
+    login: str
     name: Optional[str] = None
     lastname: Optional[str] = None
     patronymic: str
     age: int
     class_id: int
     phone_number: str
-    email: EmailStr
     created_at: date
     avatar_url: str
     user_rate: int

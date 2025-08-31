@@ -1,14 +1,14 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 
 class RegisterIn(BaseModel):
+    login: str
     name: str | None = None
     lastname: str | None = None
     patronymic: str
     age: int
     class_id: int
     phone_number: str
-    email: EmailStr
     password: str
     avatar_url: str
     user_rate: int
@@ -17,7 +17,7 @@ class RegisterIn(BaseModel):
 
 
 class LoginIn(BaseModel):
-    email: EmailStr
+    login: str
     password: str
 
 

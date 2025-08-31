@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = Field(default="HS256")
     jwt_exp_minutes: int = Field(default=60)
 
-    admin_email: str = Field(default="admin@example.com")
+    admin_login: str = Field(default="admin")
     admin_password: str = Field(default="admin")
     admin_phone: str = Field(default="0000000000")
     admin_avatar_url: str = Field(default="")

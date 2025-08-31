@@ -87,7 +87,7 @@ def upgrade() -> None:
     sa.Column('age', sa.Integer(), nullable=False),
     sa.Column('class_id', sa.Integer(), nullable=False),
     sa.Column('phone_number', sa.String(length=50), nullable=False),
-    sa.Column('email', sa.String(length=255), nullable=False),
+    sa.Column('login', sa.String(length=255), nullable=False),
     sa.Column('created_at', sa.Date(), nullable=False),
     sa.Column('avatar_url', sa.Text(), nullable=False),
     sa.Column('user_rate', sa.Integer(), nullable=False),
