@@ -126,7 +126,18 @@ def get_next_week_complexes(db: Session = Depends(db_session), user: User = Depe
     ).all()
     result: dict[int, list[ComplexOut]] = {}
     for weekday_id, complex_obj in rows:
-        result.setdefault(weekday_id, []).append(ComplexOut.model_validate(complex_obj))
+        # Получаем продукты для комплекса
+        products = db.execute(
+            select(Product)
+            .join(ComplexProduct, ComplexProduct.product_id == Product.id)
+            .where(ComplexProduct.complex_id == complex_obj.id)
+        ).scalars().all()
+        
+        # Создаем ComplexOut с продуктами
+        complex_out = ComplexOut.model_validate(complex_obj)
+        complex_out.products = products
+        
+        result.setdefault(weekday_id, []).append(complex_out)
     return result
 
 
@@ -142,7 +153,18 @@ def get_current_week_complexes(db: Session = Depends(db_session), user: User = D
     ).all()
     result: dict[int, list[ComplexOut]] = {}
     for weekday_id, complex_obj in rows:
-        result.setdefault(weekday_id, []).append(ComplexOut.model_validate(complex_obj))
+        # Получаем продукты для комплекса
+        products = db.execute(
+            select(Product)
+            .join(ComplexProduct, ComplexProduct.product_id == Product.id)
+            .where(ComplexProduct.complex_id == complex_obj.id)
+        ).scalars().all()
+        
+        # Создаем ComplexOut с продуктами
+        complex_out = ComplexOut.model_validate(complex_obj)
+        complex_out.products = products
+        
+        result.setdefault(weekday_id, []).append(complex_out)
     return result
 
 
@@ -179,14 +201,36 @@ def set_next_week_choices(payload: ChoicesSetIn, db: Session = Depends(db_sessio
 )
 def get_next_week_choices(db: Session = Depends(db_session), user: User = Depends(get_current_user)):
     week_start = _next_monday(date.today())
-    items = db.execute(
-        select(UserComplexChoice.weekday_id, UserComplexChoice.complex_id)
+    choices = db.execute(
+        select(UserComplexChoice.weekday_id, Complex)
+        .join(Complex, Complex.id == UserComplexChoice.complex_id)
         .where(
             UserComplexChoice.user_id == user.id,
             UserComplexChoice.week_start == week_start,
         )
     ).all()
-    return {"week_start": str(week_start), "items": [{"weekday_id": w, "complex_id": c} for w, c in items]}
+    
+    result = {"week_start": str(week_start), "items": []}
+    
+    for weekday_id, complex_obj in choices:
+        # Получаем продукты для комплекса
+        products = db.execute(
+            select(Product)
+            .join(ComplexProduct, ComplexProduct.product_id == Product.id)
+            .where(ComplexProduct.complex_id == complex_obj.id)
+        ).scalars().all()
+        
+        # Создаем ComplexOut с продуктами
+        complex_out = ComplexOut.model_validate(complex_obj)
+        complex_out.products = products
+        
+        result["items"].append({
+            "weekday_id": weekday_id,
+            "complex_id": complex_obj.id,
+            "complex": complex_out
+        })
+    
+    return result
 
 
 @router.get(
@@ -195,14 +239,36 @@ def get_next_week_choices(db: Session = Depends(db_session), user: User = Depend
 )
 def get_current_week_choices(db: Session = Depends(db_session), user: User = Depends(get_current_user)):
     week_start = _current_monday(date.today())
-    items = db.execute(
-        select(UserComplexChoice.weekday_id, UserComplexChoice.complex_id)
+    choices = db.execute(
+        select(UserComplexChoice.weekday_id, Complex)
+        .join(Complex, Complex.id == UserComplexChoice.complex_id)
         .where(
             UserComplexChoice.user_id == user.id,
             UserComplexChoice.week_start == week_start,
         )
     ).all()
-    return {"week_start": str(week_start), "items": [{"weekday_id": w, "complex_id": c} for w, c in items]}
+    
+    result = {"week_start": str(week_start), "items": []}
+    
+    for weekday_id, complex_obj in choices:
+        # Получаем продукты для комплекса
+        products = db.execute(
+            select(Product)
+            .join(ComplexProduct, ComplexProduct.product_id == Product.id)
+            .where(ComplexProduct.complex_id == complex_obj.id)
+        ).scalars().all()
+        
+        # Создаем ComplexOut с продуктами
+        complex_out = ComplexOut.model_validate(complex_obj)
+        complex_out.products = products
+        
+        result["items"].append({
+            "weekday_id": weekday_id,
+            "complex_id": complex_obj.id,
+            "complex": complex_out
+        })
+    
+    return result
 
 
 @router.patch(

@@ -3,6 +3,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
+from app.schemas.products import ProductOut
+
 
 class ComplexBase(BaseModel):
     name: str
@@ -26,6 +28,7 @@ class ComplexUpdate(BaseModel):
 
 class ComplexOut(ComplexBase):
     id: int
+    products: List[ProductOut] = []
 
     class Config:
         from_attributes = True
