@@ -3,6 +3,25 @@ from typing import Optional
 from pydantic import BaseModel
 
 
+class ProductTypeBase(BaseModel):
+    name: str
+
+
+class ProductTypeCreate(ProductTypeBase):
+    pass
+
+
+class ProductTypeUpdate(BaseModel):
+    name: Optional[str] = None
+
+
+class ProductTypeOut(ProductTypeBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
 class ProductBase(BaseModel):
     name: str
     blc: int

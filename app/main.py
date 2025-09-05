@@ -5,7 +5,7 @@ from app.api import complexes as complexes_router
 from app.api import orders as orders_router
 from app.api import auth as auth_router
 from app.api import classes as classes_router
-from app.api import weekdays as week_router
+from app.api import product_types as product_types_router
 
 
 def create_app() -> FastAPI:
@@ -23,7 +23,7 @@ def create_app() -> FastAPI:
     api.include_router(orders_router.router)
     api.include_router(auth_router.router)
     api.include_router(classes_router.router)
-    api.include_router(week_router.router)
+    api.include_router(product_types_router.router)
 
     app.include_router(api)
 
