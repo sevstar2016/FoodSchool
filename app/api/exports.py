@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import db_session, require_admin
 from app.models.users import User, Class
-from app.models.complexes import UserComplexChoice, Complex, Weekday
+from app.models.complexes import UserComplexChoice, Complex, ComplexWeekday
 
 
 router = APIRouter(prefix="/exports", tags=["exports"]) 
@@ -71,7 +71,22 @@ def export_last_week_choices(
     # Determine target week start
     target_week_start = _resolve_week_start(db, week, week_start)
 
-    # Fetch choices joined with users, classes, weekdays, complexes
+    # Use only weekdays Mon-Fri
+    weekdays = [1, 2, 3, 4, 5]
+
+    # Preload available (not closed) complexes per weekday to use as fallback when no choice
+    fallback_by_weekday: dict[int, str] = {}
+    available_rows = db.execute(
+        select(ComplexWeekday.weekday_id, Complex.id, Complex.name)
+        .join(Complex, Complex.id == ComplexWeekday.complex_id)
+        .where(ComplexWeekday.weekday_id.in_(weekdays), Complex.is_closed == False)
+        .order_by(ComplexWeekday.weekday_id, Complex.id)
+    ).all()
+    for wid, cid, cname in available_rows:
+        if wid not in fallback_by_weekday:
+            fallback_by_weekday[wid] = cname
+
+    # Fetch users of classes and LEFT JOIN choices for the selected week (only Mon-Fri)
     stmt = (
         select(
             Class.id.label("class_id"),
@@ -81,22 +96,24 @@ def export_last_week_choices(
             User.lastname,
             User.name,
             User.patronymic,
-            Weekday.id.label("weekday_id"),
-            Weekday.name.label("weekday_name"),
+            UserComplexChoice.weekday_id,
             Complex.name.label("complex_name"),
         )
         .join(User, User.class_id == Class.id)
-        .join(UserComplexChoice, UserComplexChoice.user_id == User.id)
-        .join(Weekday, Weekday.id == UserComplexChoice.weekday_id)
-        .join(Complex, Complex.id == UserComplexChoice.complex_id)
-        .where(UserComplexChoice.week_start == target_week_start)
-        .order_by(Class.id, User.lastname, User.name, Weekday.id)
+        .join(
+            UserComplexChoice,
+            (UserComplexChoice.user_id == User.id)
+            & (UserComplexChoice.week_start == target_week_start)
+            & (UserComplexChoice.weekday_id.in_(weekdays)),
+            isouter=True,
+        )
+        .join(Complex, Complex.id == UserComplexChoice.complex_id, isouter=True)
+        .order_by(Class.id, User.lastname, User.name, User.id)
     )
 
     rows = db.execute(stmt).all()
 
     # Group rows by class and pivot weekdays to columns per user
-    # Structure: { class_id: { user_id: {meta, choices{1..7}} } }
     by_class_users: dict[int, dict[int, dict]] = defaultdict(dict)
     class_titles: dict[int, str] = {}
 
@@ -109,10 +126,18 @@ def export_last_week_choices(
                 "lastname": r.lastname,
                 "name": r.name,
                 "patronymic": r.patronymic,
-                "choices": {i: "" for i in range(1, 8)},
+                "choices": {i: "" for i in weekdays},
             },
         )
-        user_bucket["choices"][int(r.weekday_id)] = r.complex_name or ""
+        if r.weekday_id is not None:
+            user_bucket["choices"][int(r.weekday_id)] = r.complex_name or ""
+
+    # Substitute fallbacks for empty choices (Mon-Fri only)
+    for users_map in by_class_users.values():
+        for u in users_map.values():
+            for wid in weekdays:
+                if not u["choices"].get(wid):
+                    u["choices"][wid] = fallback_by_weekday.get(wid, "")
 
     # Create workbook with openpyxl
     try:
@@ -121,20 +146,16 @@ def export_last_week_choices(
         raise RuntimeError("openpyxl is required for export. Please add it to requirements and install.")
 
     wb = Workbook()
-    # Remove default sheet; we'll add per-class
     default_sheet = wb.active
     wb.remove(default_sheet)
 
-    # If no data, still provide an empty workbook with a note
     if not by_class_users:
         ws = wb.create_sheet("No data")
         ws.append(["Нет данных за неделю", str(target_week_start)])
     else:
-        # Header names for weekdays
-        weekday_headers = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+        weekday_headers = ["Пн", "Вт", "Ср", "Чт", "Пт"]
         for cls_id, users_map in by_class_users.items():
             title = class_titles.get(cls_id, f"class_{cls_id}")
-            # Excel sheet title max 31 chars and cannot contain certain characters
             safe_title = (
                 title[:31]
                 .replace("/", "-")
@@ -146,7 +167,6 @@ def export_last_week_choices(
             )
             ws = wb.create_sheet(safe_title or f"class_{cls_id}")
 
-            # Header
             ws.append([
                 "Фамилия",
                 "Имя",
@@ -154,7 +174,6 @@ def export_last_week_choices(
                 *weekday_headers,
             ])
 
-            # Sort users by lastname, name for reproducible order
             sorted_users = sorted(
                 users_map.items(),
                 key=lambda kv: (kv[1]["lastname"] or "", kv[1]["name"] or ""),
@@ -170,11 +189,8 @@ def export_last_week_choices(
                     choices.get(3, ""),
                     choices.get(4, ""),
                     choices.get(5, ""),
-                    choices.get(6, ""),
-                    choices.get(7, ""),
                 ])
 
-    # Save to bytes
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)
