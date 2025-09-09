@@ -7,6 +7,7 @@ from app.api import auth as auth_router
 from app.api import classes as classes_router
 from app.api import product_types as product_types_router
 from app.api import weekdays as weekdays_router
+from app.api import exports as exports_router
 
 
 def create_app() -> FastAPI:
@@ -26,6 +27,7 @@ def create_app() -> FastAPI:
     api.include_router(classes_router.router)
     api.include_router(product_types_router.router)
     api.include_router(weekdays_router.router)
+    api.include_router(exports_router.router)
 
     app.include_router(api)
 
@@ -33,5 +35,3 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
-
-
