@@ -25,7 +25,6 @@ def _last_week_monday(today: date) -> date:
 
 @router.get(
     "/choices/last-week.xlsx",
-    dependencies=[Depends(require_admin)],
     description="Экспорт всех выборов комплексов за последнюю прошедшую неделю. Каждый класс на отдельном листе."
 )
 def export_last_week_choices(db: Session = Depends(db_session)):
