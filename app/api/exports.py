@@ -86,7 +86,7 @@ def export_last_week_choices(
         if wid not in fallback_by_weekday:
             fallback_by_weekday[wid] = cname
 
-    # Fetch users of classes and LEFT JOIN choices for the selected week (only Mon-Fri)
+    # Fetch users of classes and LEFT JOIN choices for the selected week (only Mon-Fri), exclude class id=1
     stmt = (
         select(
             Class.id.label("class_id"),
@@ -108,6 +108,7 @@ def export_last_week_choices(
             isouter=True,
         )
         .join(Complex, Complex.id == UserComplexChoice.complex_id, isouter=True)
+        .where(Class.id != 1)
         .order_by(Class.id, User.lastname, User.name, User.id)
     )
 
@@ -155,6 +156,9 @@ def export_last_week_choices(
     else:
         weekday_headers = ["Пн", "Вт", "Ср", "Чт", "Пт"]
         for cls_id, users_map in by_class_users.items():
+            # Safety check: skip class id 1
+            if cls_id == 1:
+                continue
             title = class_titles.get(cls_id, f"class_{cls_id}")
             safe_title = (
                 title[:31]
