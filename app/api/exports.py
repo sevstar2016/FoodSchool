@@ -95,13 +95,24 @@ def export_last_week_choices(
 
     rows = db.execute(stmt).all()
 
-    # Group rows by class
-    by_class: dict[int, list] = defaultdict(list)
+    # Group rows by class and pivot weekdays to columns per user
+    # Structure: { class_id: { user_id: {meta, choices{1..7}} } }
+    by_class_users: dict[int, dict[int, dict]] = defaultdict(dict)
     class_titles: dict[int, str] = {}
+
     for r in rows:
         cls_id = r.class_id
         class_titles[cls_id] = f"{r.number or ''}{(r.letter or '').strip()}".strip() or f"class_{cls_id}"
-        by_class[cls_id].append(r)
+        user_bucket = by_class_users[cls_id].setdefault(
+            r.user_id,
+            {
+                "lastname": r.lastname,
+                "name": r.name,
+                "patronymic": r.patronymic,
+                "choices": {i: "" for i in range(1, 8)},
+            },
+        )
+        user_bucket["choices"][int(r.weekday_id)] = r.complex_name or ""
 
     # Create workbook with openpyxl
     try:
@@ -115,14 +126,24 @@ def export_last_week_choices(
     wb.remove(default_sheet)
 
     # If no data, still provide an empty workbook with a note
-    if not by_class:
+    if not by_class_users:
         ws = wb.create_sheet("No data")
         ws.append(["Нет данных за неделю", str(target_week_start)])
     else:
-        for cls_id, items in by_class.items():
+        # Header names for weekdays
+        weekday_headers = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+        for cls_id, users_map in by_class_users.items():
             title = class_titles.get(cls_id, f"class_{cls_id}")
             # Excel sheet title max 31 chars and cannot contain certain characters
-            safe_title = title[:31].replace("/", "-").replace("\\", "-").replace("*", "-").replace("[", "(").replace("]", ")").replace(":", "-")
+            safe_title = (
+                title[:31]
+                .replace("/", "-")
+                .replace("\\", "-")
+                .replace("*", "-")
+                .replace("[", "(")
+                .replace("]", ")")
+                .replace(":", "-")
+            )
             ws = wb.create_sheet(safe_title or f"class_{cls_id}")
 
             # Header
@@ -130,17 +151,27 @@ def export_last_week_choices(
                 "Фамилия",
                 "Имя",
                 "Отчество",
-                "День недели",
-                "Комплекс",
+                *weekday_headers,
             ])
 
-            for r in items:
+            # Sort users by lastname, name for reproducible order
+            sorted_users = sorted(
+                users_map.items(),
+                key=lambda kv: (kv[1]["lastname"] or "", kv[1]["name"] or ""),
+            )
+            for _, u in sorted_users:
+                choices = u["choices"]
                 ws.append([
-                    r.lastname,
-                    r.name,
-                    r.patronymic,
-                    r.weekday_name,
-                    r.complex_name,
+                    u["lastname"],
+                    u["name"],
+                    u["patronymic"],
+                    choices.get(1, ""),
+                    choices.get(2, ""),
+                    choices.get(3, ""),
+                    choices.get(4, ""),
+                    choices.get(5, ""),
+                    choices.get(6, ""),
+                    choices.get(7, ""),
                 ])
 
     # Save to bytes
