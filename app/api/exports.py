@@ -23,13 +23,53 @@ def _last_week_monday(today: date) -> date:
     return _current_monday(today) - timedelta(days=7)
 
 
+def _next_monday(today: date) -> date:
+    return today + timedelta(days=((7 - today.weekday()) % 7))
+
+
+def _resolve_week_start(db: Session, mode: str | None, explicit: date | None) -> date:
+    """
+    Resolve which week_start to export:
+    - if explicit provided -> use it
+    - if mode == 'last' -> last completed week's Monday
+    - if mode == 'current' -> current week's Monday
+    - if mode == 'next' -> next Monday
+    - else (None or 'latest') -> latest available week_start in user_complex_choices
+    """
+    today = date.today()
+    if explicit:
+        return explicit
+    if mode == "last":
+        return _last_week_monday(today)
+    if mode == "current":
+        return _current_monday(today)
+    if mode == "next":
+        return _next_monday(today)
+
+    # latest by data
+    latest = db.execute(
+        select(UserComplexChoice.week_start)
+        .distinct()
+        .order_by(UserComplexChoice.week_start.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    return latest or _last_week_monday(today)
+
+
 @router.get(
     "/choices/last-week.xlsx",
-    description="Экспорт всех выборов комплексов за последнюю прошедшую неделю. Каждый класс на отдельном листе."
+    description=(
+        "Экспорт выборов комплексов. По умолчанию — последняя доступная неделя по данным. "
+        "Можно указать ?week=last|current|next|latest и/или ?week_start=YYYY-MM-DD"
+    )
 )
-def export_last_week_choices(db: Session = Depends(db_session)):
-    # Determine target week start (last fully completed week)
-    week_start = _last_week_monday(date.today())
+def export_last_week_choices(
+    db: Session = Depends(db_session),
+    week: str | None = None,
+    week_start: date | None = None,
+):
+    # Determine target week start
+    target_week_start = _resolve_week_start(db, week, week_start)
 
     # Fetch choices joined with users, classes, weekdays, complexes
     stmt = (
@@ -49,7 +89,7 @@ def export_last_week_choices(db: Session = Depends(db_session)):
         .join(UserComplexChoice, UserComplexChoice.user_id == User.id)
         .join(Weekday, Weekday.id == UserComplexChoice.weekday_id)
         .join(Complex, Complex.id == UserComplexChoice.complex_id)
-        .where(UserComplexChoice.week_start == week_start)
+        .where(UserComplexChoice.week_start == target_week_start)
         .order_by(Class.id, User.lastname, User.name, Weekday.id)
     )
 
@@ -77,7 +117,7 @@ def export_last_week_choices(db: Session = Depends(db_session)):
     # If no data, still provide an empty workbook with a note
     if not by_class:
         ws = wb.create_sheet("No data")
-        ws.append(["Нет данных за неделю", str(week_start)])
+        ws.append(["Нет данных за неделю", str(target_week_start)])
     else:
         for cls_id, items in by_class.items():
             title = class_titles.get(cls_id, f"class_{cls_id}")
@@ -108,7 +148,7 @@ def export_last_week_choices(db: Session = Depends(db_session)):
     wb.save(buf)
     buf.seek(0)
 
-    filename = f"choices_{week_start.isoformat()}.xlsx"
+    filename = f"choices_{target_week_start.isoformat()}.xlsx"
     headers = {
         "Content-Disposition": f"attachment; filename=\"{filename}\""
     }
